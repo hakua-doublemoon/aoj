@@ -136,9 +136,10 @@ void delete_list(DoublyList** head, DoublyList** tail, int key)
         if (lp->tail->key != key) {
             continue;
         }
+        DoublyList* list = lp->tail;
         lp->tail = lp->tail->tail;
         lp->tail->head = lp;
-        free_list(lp->tail);
+        free_list(list);
         break;
     }
 }
