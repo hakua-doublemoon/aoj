@@ -1,66 +1,55 @@
 N,K = (gets).split(" ").map {|v| v.to_i}
-bags = []
+baggeges = []
 pp = 0
 
 N.times do
     bg = (gets).to_i
-    bags << bg
+    baggeges << bg
     pp += bg
 end
-bags.sort!
+baggeges << 0
 
-trucks = Array.new(K) {[]}
-trucks[0] = bags
-
-def max_truck_get(trucks)
-    m = 0
-    max_truck_no = 0
-    trucks.each.with_index do |trk, t_idx|
-        s = trk.sum
-        if  s > m  then
-            m = s
-            max_truck_no = t_idx
-        end
-    end
-    [max_truck_no, m]
-end
-
-def truck_try_load(trucks, bag, p)
-    puts "p = #{p} [#{bag}]"
-    trucks.each {|t| p t}
-
-    ready_truck_no = -1
-    min_truck_no = -1
-    m = p
-    trucks.each.with_index do |trk, t_idx|
-        s = trk.sum
-        if  m > s  then
-            m = s
-            min_truck_no = t_idx
-        end
-        if  (s + bag) <= p  then
-            ready_truck_no = t_idx
+up_p = pp
+dw_p = baggeges.max
+check_list = []
+ans = 0
+while  true  do
+    cur_p = (up_p + dw_p).div(2)
+    if  check_list.include?(cur_p)  then
+        if  check_list.include?(cur_p+1)  then
             break
+        else
+            cur_p += 1
         end
     end
-    [ready_truck_no, min_truck_no]
-end
-
-while  pp > 0  do
-    max_truck_no,pp = max_truck_get(trucks)
-    bag = trucks[max_truck_no].shift
-    p = pp - bag
-    ready_truck_no,min_truck_no = truck_try_load(trucks, bag, p)
-    if  ready_truck_no == -1   then
-        # 一番空いてるトラックの一番小さい要素と交換してみる ?
-        trucks[max_truck_no].unshift(bag) # デバッグ用
-        break
+    #puts "\n--[#{cur_p}]---------"
+    check_list << cur_p
+    trk = 0
+    trk_num = 0
+    can_load = true
+    baggeges.each do |bag|
+        t = trk + bag
+        if  t > cur_p   then
+            trk_num += 1
+            trk = bag
+            if  trk_num == K  then
+                can_load = false
+                #print "#{bag} "
+                break
+            end
+            #puts ""
+        else
+            trk = t
+        end
+        #print "#{bag} "
     end
-    trucks[ready_truck_no].push(bag)
-    trucks[ready_truck_no].sort!
-    pp = p
+    if  can_load  then
+        up_p = cur_p
+        ans = cur_p
+    else
+        dw_p = cur_p
+    end
 end
 
-#trucks.each {|t| p t}
-puts pp 
+puts ans
 
