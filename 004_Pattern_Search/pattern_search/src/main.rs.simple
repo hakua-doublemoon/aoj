@@ -55,7 +55,7 @@ impl CharField {
                     continue;
                 }
                 if  self.is_match(y, x, template)  {
-                    println!("{} {}", y, x);
+                    //println!("{} {}", y, x);
                 }
             }
         }

@@ -1,9 +1,12 @@
+struct Condidate {
+    x: usize,
+    y: usize,
+}
+
 struct CharField {
     h: usize,
     w: usize,
-    data: Vec<Vec<char>>,
-    feature_x: usize,
-    feature_y: usize,
+    data: Vec<Vec<u8>>,
 }
 
 impl CharField {
@@ -21,8 +24,6 @@ impl CharField {
             h: hw[0],
             w: hw[1],
             data: Vec::new(),
-            feature_x: 0,
-            feature_y: 0,
         } // ここにセミコロンを付けないことで、値として返すことになる
     }
 
@@ -38,78 +39,62 @@ impl CharField {
             // charsはChars型を返すみたいなのでそのままでもいいけど、
             // あえてc言語風に処理している、つもり。
             for c in inputs.trim().chars() {
-                self.data[y].push(c);
+                self.data[y].push(c as u8);
             }
         }
-    }
-
-    pub fn get_tail_feature(&mut self)
-    {
-        let head = self.data[0][0];
-        let mut y = self.h-1;
-        let mut is_end = false;
-        while  !is_end  {
-            let mut x = self.w-1;
-            loop {
-                if  self.data[y as usize][x as usize] == head  {
-                    if  x != 0  {
-                        x -= 1;
-                    } else {
-                        break;
-                    }
-                    continue;
-                }
-                self.feature_y = y;
-                self.feature_x = x;
-                is_end = true;
-                break;
-            }
-            if  y != 0  {
-                y -= 1;
-            } else {
-                break;
-            }
-        }
-        //println!("{} {}", self.feature_y, self.feature_x);
     }
 
     pub fn search(&self, template: &CharField)
     {
         let template_head = template.data[0][0];
-        for y in 0..(self.h - template.h + 1) {
-            for x in 0..(self.w - template.w + 1) {
-                if  self.data[y][x] != template_head  {
-                    continue;
-                }
-                if  self.is_match(y, x, template)  {
-                    println!("{} {}", y, x);
+        let mut condidates: Vec<Condidate> = Vec::new();
+        for y in 0..self.h {
+            if  y <= (self.h - template.h)  {
+                for x in 0..(self.w - template.w + 1) {
+                    if  self.data[y][x] == template_head  {
+                        condidates.push( Condidate {
+                                x,
+                                y,
+                            }
+                        );
+                    }
                 }
             }
+            let mut idx :usize = 0;
+            while  idx < condidates.len() {
+                let ret = self.is_line_match(y, &condidates[idx], template);
+                if  ret.1  {
+                    println!("{} {}", condidates[idx].y, condidates[idx].x);
+                    condidates.remove(idx);
+                } else if  !ret.0  {
+                    condidates.remove(idx);
+                } else {
+                    idx += 1;
+                }
+            }
+        }
+
+        for cnd in &condidates  {
+            println!("{} {}", cnd.y, cnd.x);
         }
     }
 
-    pub fn is_match(&self, y0: usize, x0: usize, template: &CharField) -> bool
+    pub fn is_line_match(&self, y: usize, cnd: &Condidate, template: &CharField) -> (bool, bool)
     {
         let mut ret = true;
-        // 特徴点照合
-        let y = y0 + template.feature_y;
-        let x = x0 + template.feature_x;
-        if  self.data[y][x] != template.data[template.feature_y][template.feature_x]  {
-            return false;
+        let v: usize = y - cnd.y;
+        if  v >= template.h  {
+            return (true, true);
         }
-        // 全面探索
-        for y in y0..(y0 + template.h) {
-            for x in x0..(x0 + template.w) {
-                if  self.data[y][x] != template.data[y - y0][x - x0]  {
-                    ret = false;
-                    break;
-                }
-            }
-            if  !ret  {
+        let x0: usize = cnd.x;
+        for x in x0..(x0 + template.w) {
+            if  self.data[y][x] != template.data[v][x - x0]  {
+                ret = false;
                 break;
             }
         }
-        ret
+        //println!("{}: {} {} -> {}", y, cnd.y, cnd.x, ret);
+        (ret, false)
     }
 }
 
@@ -121,7 +106,6 @@ fn main() {
     // H+1行目？:  縦 R × 横 C 
     let mut template = CharField::new();
     template.read_data();
-    template.get_tail_feature();
 
     // マッチングする
     origin.search(&template);
