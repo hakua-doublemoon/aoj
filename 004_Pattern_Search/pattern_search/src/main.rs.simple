@@ -1,0 +1,94 @@
+struct CharField {
+    h: usize,
+    w: usize,
+    data: Vec<Vec<char>>,
+}
+
+impl CharField {
+    pub fn new() -> CharField
+    {
+        let mut inputs = String::new();
+        std::io::stdin().read_line(&mut inputs).ok();
+        // 改行をtrimで除去して、whitespaceで分離（split）して、mapとparseでほしい型にして、
+        // collectで配列として返させる。
+        // parseはResult型を返すのでokで変換し、さらにSome型が出てくるのでunwrapで中身を取り出す。
+        let hw :Vec<usize> = inputs.trim().split_whitespace().map(
+                    |e| e.parse().ok().unwrap()
+                  ).collect();
+        CharField {
+            h: hw[0],
+            w: hw[1],
+            data: Vec::new(),
+        } // ここにセミコロンを付けないことで、値として返すことになる
+    }
+
+    pub fn read_data(&mut self)
+    {
+        for y in 0..self.h {
+            // こうするとpushのときに速くなるらしい。
+            // with_capacityは容量を確保しているわけではない（mallocとは違う）
+            self.data.push(Vec::with_capacity(self.w)); 
+            let mut inputs = String::new();
+            std::io::stdin().read_line(&mut inputs).ok();
+            // 入力の改行をtrimで除去して、charsで一文字ずつ取り出す
+            // charsはChars型を返すみたいなのでそのままでもいいけど、
+            // あえてc言語風に処理している、つもり。
+            for c in inputs.trim().chars() {
+                self.data[y].push(c);
+            }
+        }
+    }
+
+    pub fn print_data(&self)
+    {
+        for y in 0..self.h {
+            println!("{:?}", self.data[y]); // まとめて出せる気もするが
+        }
+    }
+
+    pub fn search(&self, template: &CharField)
+    {
+        let template_head = template.data[0][0];
+        for y in 0..(self.h - template.h + 1) {
+            for x in 0..(self.w - template.w + 1) {
+                if  self.data[y][x] != template_head  {
+                    continue;
+                }
+                if  self.is_match(y, x, template)  {
+                    println!("{} {}", y, x);
+                }
+            }
+        }
+    }
+
+    pub fn is_match(&self, y0: usize, x0: usize, template: &CharField) -> bool
+    {
+        let mut ret = true;
+        for y in y0..(y0 + template.h) {
+            for x in x0..(x0 + template.w) {
+                if  self.data[y][x] != template.data[y - y0][x - x0]  {
+                    ret = false;
+                    break;
+                }
+            }
+            if  !ret  {
+                break;
+            }
+        }
+        ret
+    }
+}
+
+fn main() {
+    // 1行目: 縦 H × 横 W
+    let mut origin = CharField::new();
+    // 2行目以降: originオブジェクトにread_dataさせる
+    origin.read_data();
+    // H+1行目？:  縦 R × 横 C 
+    let mut template = CharField::new();
+    template.read_data();
+
+    // マッチングする
+    origin.search(&template);
+}
+

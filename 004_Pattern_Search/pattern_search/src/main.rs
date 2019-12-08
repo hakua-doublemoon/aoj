@@ -1,0 +1,109 @@
+struct Condidate {
+    x: usize,
+    y: usize,
+}
+
+struct CharField {
+    h: usize,
+    w: usize,
+    data: Vec<Vec<u8>>,
+}
+
+impl CharField {
+    pub fn new() -> CharField
+    {
+        let mut inputs = String::new();
+        std::io::stdin().read_line(&mut inputs).ok();
+        // 改行をtrimで除去して、whitespaceで分離（split）して、mapとparseでほしい型にして、
+        // collectで配列として返させる。
+        // parseはResult型を返すのでokで変換し、さらにSome型が出てくるのでunwrapで中身を取り出す。
+        let hw :Vec<usize> = inputs.trim().split_whitespace().map(
+                    |e| e.parse().ok().unwrap()
+                  ).collect();
+        CharField {
+            h: hw[0],
+            w: hw[1],
+            data: Vec::new(),
+        } // ここにセミコロンを付けないことで、値として返すことになる
+    }
+
+    pub fn read_data(&mut self)
+    {
+        for y in 0..self.h {
+            // こうするとpushのときに速くなるらしい。
+            // with_capacityは容量を確保しているわけではない（mallocとは違う）
+            self.data.push(Vec::with_capacity(self.w)); 
+            let mut inputs = String::new();
+            std::io::stdin().read_line(&mut inputs).ok();
+            // 入力の改行をtrimで除去して、charsで一文字ずつ取り出す
+            // charsはChars型を返すみたいなのでそのままでもいいけど、
+            // あえてc言語風に処理している、つもり。
+            for c in inputs.trim().chars() {
+                self.data[y].push(c as u8);
+            }
+        }
+    }
+
+    pub fn search(&self, template: &CharField)
+    {
+        let template_head = template.data[0][0];
+        let mut condidates: Vec<Condidate> = Vec::new();
+        for y in 0..self.h {
+            if  y <= (self.h - template.h)  {
+                for x in 0..(self.w - template.w + 1) {
+                    if  self.data[y][x] == template_head  {
+                        condidates.push( Condidate {
+                                x,
+                                y,
+                            }
+                        );
+                    }
+                }
+            }
+            let mut idx :usize = 0;
+            while  idx < condidates.len() {
+                if  !self.is_line_match(y, &condidates[idx], template)  {
+                    condidates.remove(idx);
+                } else {
+                    idx += 1;
+                }
+            }
+        }
+
+        for cnd in &condidates  {
+            println!("{} {}", cnd.y, cnd.x);
+        }
+    }
+
+    pub fn is_line_match(&self, y: usize, cnd: &Condidate, template: &CharField) -> bool
+    {
+        let mut ret = true;
+        let v: usize = y - cnd.y;
+        if  v >= template.h  {
+            return true;
+        }
+        let x0: usize = cnd.x;
+        for x in x0..(x0 + template.w) {
+            if  self.data[y][x] != template.data[v][x - x0]  {
+                ret = false;
+                break;
+            }
+        }
+        //println!("{}: {} {} -> {}", y, cnd.y, cnd.x, ret);
+        ret
+    }
+}
+
+fn main() {
+    // 1行目: 縦 H × 横 W
+    let mut origin = CharField::new();
+    // 2行目以降: originオブジェクトにread_dataさせる
+    origin.read_data();
+    // H+1行目？:  縦 R × 横 C 
+    let mut template = CharField::new();
+    template.read_data();
+
+    // マッチングする
+    origin.search(&template);
+}
+
